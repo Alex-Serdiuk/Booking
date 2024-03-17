@@ -195,9 +195,15 @@ namespace BookingServer.Controllers
         {
             try
             {
+                //var rooms = await _context.Rooms
+                //    .Where(r => r.Hotel.Id == id)
+                //    .ToListAsync();
                 var rooms = await _context.Rooms
+                    .Include(r => r.RoomNumbers)
+                        .ThenInclude(rn => rn.UnavailableDates)
                     .Where(r => r.Hotel.Id == id)
                     .ToListAsync();
+
 
                 if (rooms == null)
                 {

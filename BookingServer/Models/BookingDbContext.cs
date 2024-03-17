@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BookingServer.Models
 {
@@ -30,6 +31,20 @@ namespace BookingServer.Models
 
 
             base.OnModelCreating(builder);
+
+            //// Створення адміністратора при першому запуску
+            //var adminUser = new User
+            //{
+            //    UserName = "admin",
+            //    Email = "admin@example.com",
+            //    // Додайте інші необхідні вам властивості користувача
+            //};
+
+            //var userManager = serviceProvider.GetRequiredService<UserManager<User>>();
+            //userManager.CreateAsync(adminUser, "12345").GetAwaiter().GetResult();
+
+            //// Додайте роль "Admin" користувачеві
+            //userManager.AddToRoleAsync(adminUser, "Admin").GetAwaiter().GetResult();
         }
     }
 }

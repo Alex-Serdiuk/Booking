@@ -40,5 +40,19 @@ namespace BookingServer.Controllers
         //        return StatusCode(500, "An error occurred while updating the user.");
         //    }
         //}
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        {
+            try
+            {
+                var users = await _context.Users.ToListAsync();
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message); // You can handle errors appropriately here
+            }
+        }
     }
 }

@@ -190,8 +190,8 @@ namespace BookingServer.Controllers
             }
         }
 
-        [HttpGet("/room/{id}")]
-        public async Task<IActionResult> GetHotelRooms(int id)
+        [HttpGet("GetRoomsByHotelId/{id}")]
+        public async Task<IActionResult> GetRoomsByHotelId(int id)
         {
             try
             {

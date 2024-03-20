@@ -22,7 +22,7 @@ namespace BookingServer.Models
         public string Country { get; set; }
 
         [MaxLength(255)]
-        public string Img { get; set; }
+        public string? Img { get; set; }
 
         [Required]
         [MaxLength(255)]

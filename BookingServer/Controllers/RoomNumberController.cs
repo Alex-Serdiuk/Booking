@@ -130,7 +130,7 @@ namespace BookingServer.Controllers
             }
         }
 
-        [HttpPut("/availability/{id}")]
+        [HttpPut("availability/{id}")]
         public async Task<IActionResult> UpdateRoomAvailability(int id, [FromBody] DateForm dateList)
         {
             try

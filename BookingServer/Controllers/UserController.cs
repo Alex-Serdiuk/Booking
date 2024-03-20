@@ -54,5 +54,25 @@ namespace BookingServer.Controllers
                 return StatusCode(500, ex.Message); // You can handle errors appropriately here
             }
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(id); // знаходимо user за ідентифікатором
+                if (user == null)
+                {
+                    return NotFound(); // якщо user не знайдений, повертаємо 404
+                }
+                _context.Users.Remove(user); // видаляємо user з контексту
+                await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
+                return Ok("User has been deleted.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting hotel: {ex.Message}");
+            }
+        }
     }
 }

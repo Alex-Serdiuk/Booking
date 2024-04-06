@@ -30,7 +30,8 @@ namespace BookingServer.Services
             SigningCredentials signingCred = new SigningCredentials(securityKey,SecurityAlgorithms.HmacSha512Signature);
             var securityToken = new JwtSecurityToken(
                 claims:claims,
-                expires: DateTime.Now.AddMinutes(60),
+                //expires: DateTime.Now.AddMinutes(60),
+                expires: DateTime.Now.AddDays(1), // Зміна тут
                 issuer: _config.GetSection("Jwt:Issuer").Value,
                 audience: _config.GetSection("Jwt:Audience").Value,
                 signingCredentials: signingCred);
@@ -54,7 +55,7 @@ namespace BookingServer.Services
             var identityUser = new User
             {
                 UserName = user.UserName,
-                Email = user.UserName,
+                Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 Country = user.Country,
                 Img = user.Img,

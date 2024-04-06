@@ -1,5 +1,6 @@
 ﻿using BookingServer.Models;
 using BookingServer.Models.Forms;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,8 +22,30 @@ namespace BookingServer.Controllers
             _logger = logger;
         }
 
+        //[HttpPost]
+        //public async Task<ActionResult<Hotel>> CreateHotel([FromBody] Hotel hotel)
+        //{
+        //    _logger.LogInformation("Add hotel item");
+        //    try
+        //    {
+        //        if (_context.Hotels == null)
+        //        {
+        //            return Problem("Entity set 'Context.Hotels'  is null.");
+        //        }
+        //        _context.Hotels.Add(hotel);
+        //        await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
+
+        //        return CreatedAtAction("GetHotel", new { id = hotel.Id }, hotel);// повертаємо 201 і готель
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, $"Error creating hotel: {ex.Message}");
+        //    }
+        //}
+
         [HttpPost]
-        public async Task<ActionResult<Hotel>> CreateHotel([FromBody] Hotel hotel)
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<Hotel>> CreateHotel([FromBody] HotelForm hotelForm)
         {
             _logger.LogInformation("Add hotel item");
             try
@@ -31,7 +54,69 @@ namespace BookingServer.Controllers
                 {
                     return Problem("Entity set 'Context.Hotels'  is null.");
                 }
+
+                // Конвертуємо об'єкт hotelForm в об'єкт Hotel
+                var hotel = new Hotel
+                {
+                    Name = hotelForm.Name,
+                    Type = hotelForm.Type,
+                    City = hotelForm.City,
+                    Address = hotelForm.Address,
+                    Distance = hotelForm.Distance,
+                    Title = hotelForm.Title,
+                    Description = hotelForm.Description,
+                    CheapestPrice = hotelForm.CheapestPrice,
+                    Featured = hotelForm.Featured
+                };
+
                 _context.Hotels.Add(hotel);
+                await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
+
+                // Перевіряємо, чи передано фотографії готелю
+                if (hotelForm.Photos != null)
+                {
+                    foreach (var photoUrl in hotelForm.Photos)
+                    {
+                        // Перевіряємо URL фотографії
+                        if (Uri.TryCreate(photoUrl, UriKind.Absolute, out Uri validatedUri))
+                        {
+                            var hotelImage = new HotelImage
+                            { 
+                                Url = photoUrl,
+                                Hotel = hotel
+                            };
+                            hotel.HotelImages.Add(hotelImage);
+                        }
+                        else
+                        {
+                            // Якщо URL недійсний, ігноруємо його або видаємо помилку, якщо потрібно
+                            // Можна вибрати одну з наступних стратегій:
+                            // - Пропустити недійсні URL і продовжити створення готелю
+                            // - Повернути помилку клієнту, якщо вважаєте, що це критична помилка
+                            // В даному прикладі просто ігноруємо недійсні URL
+                            _logger.LogWarning($"Invalid URL: {photoUrl}");
+                        }
+                    }
+                }
+                await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
+
+                // Додамо кімнати до готелю, якщо вони передані
+                if (hotelForm.Rooms != null)
+                {
+                    foreach (var roomForm in hotelForm.Rooms)
+                    {
+                        var room = await _context.Rooms.FindAsync(roomForm);
+                        var newRoom = new Room
+                        {
+                            Title = room.Title,
+                            Price = room.Price,
+                            MaxPeople = room.MaxPeople,
+                            Description = room.Description,
+                            Hotel = hotel
+                        };
+                        _context.Rooms.Add(newRoom);
+                    }
+                }
                 await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
 
                 return CreatedAtAction("GetHotel", new { id = hotel.Id }, hotel);// повертаємо 201 і готель
@@ -43,19 +128,77 @@ namespace BookingServer.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateHotel(int id, Hotel hotel)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateHotel(int id, [FromBody] HotelForm hotelForm)
         {
             try
             {
-                if (id != hotel.Id)
+                var existingHotel = await _context.Hotels.FindAsync(id); // Знаходимо готель за ідентифікатором
+                if (existingHotel == null)
                 {
-                    return BadRequest(); // якщо ідентифікатори не співпадають, повертаємо 400
+                    return NotFound(); // Якщо готель не знайдено, повертаємо 404
+                }
+                // Конвертуємо об'єкт hotelForm в об'єкт Hotel
+
+                existingHotel.Name = hotelForm.Name;
+                existingHotel.Type = hotelForm.Type;
+                existingHotel.City = hotelForm.City;
+                existingHotel.Address = hotelForm.Address;
+                existingHotel.Distance = hotelForm.Distance;
+                existingHotel.Title = hotelForm.Title;
+                existingHotel.Description = hotelForm.Description;
+                existingHotel.CheapestPrice = hotelForm.CheapestPrice;
+                existingHotel.Featured = hotelForm.Featured;
+
+                // Перевіряємо, чи передано фотографії готелю
+                if (hotelForm.Photos != null)
+                {
+                    foreach (var photoUrl in hotelForm.Photos)
+                    {
+                        // Перевіряємо URL фотографії
+                        if (Uri.TryCreate(photoUrl, UriKind.Absolute, out Uri validatedUri))
+                        {
+                            var hotelImage = new HotelImage
+                            {
+                                Url = photoUrl,
+                                Hotel = existingHotel
+                            };
+                            existingHotel.HotelImages.Add(hotelImage);
+                        }
+                        else
+                        {
+                            // Якщо URL недійсний, ігноруємо його або видаємо помилку, якщо потрібно
+                            // Можна вибрати одну з наступних стратегій:
+                            // - Пропустити недійсні URL і продовжити створення готелю
+                            // - Повернути помилку клієнту, якщо вважаєте, що це критична помилка
+                            // В даному прикладі просто ігноруємо недійсні URL
+                            _logger.LogWarning($"Invalid URL: {photoUrl}");
+                        }
+                    }
                 }
 
-                _context.Entry(hotel).State = EntityState.Modified; // оновлюємо стан готелю
+                // Додамо кімнати до готелю, якщо вони передані
+                if (hotelForm.Rooms != null)
+                {
+                    foreach (var roomForm in hotelForm.Rooms)
+                    {
+                        var room = await _context.Rooms.FindAsync(roomForm);
+                        var newRoom = new Room
+                        {
+                            Title = room.Title,
+                            Price = room.Price,
+                            MaxPeople = room.MaxPeople,
+                            Description = room.Description,
+                            Hotel = existingHotel
+                        };
+                        _context.Rooms.Add(newRoom);
+                    }
+                }
+
+                //_context.Entry(hotel).State = EntityState.Modified; // оновлюємо стан готелю
                 await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
 
-                return Ok(hotel);
+                return Ok(existingHotel);
             }
             catch (Exception ex)
             {
@@ -64,6 +207,7 @@ namespace BookingServer.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteHotel(int id)
         {
             try
@@ -87,7 +231,10 @@ namespace BookingServer.Controllers
         public async Task<ActionResult<Hotel>> GetHotel(int id)
         {
             // знаходимо готель за ідентифікатором
-            var hotel = await _context.Hotels.FindAsync(id);
+            //var hotel = await _context.Hotels.FindAsync(id);
+            var hotel = await _context.Hotels
+                .Include(h => h.HotelImages) // включаємо список зображень для готелю
+                .FirstOrDefaultAsync(h => h.Id == id);
 
             if (hotel == null)
             {
@@ -99,41 +246,88 @@ namespace BookingServer.Controllers
 
 
 
+        //[HttpGet]
+        //public async Task<ActionResult<IEnumerable<Hotel>>> GetHotels([FromQuery] HotelFilter filter)
+        //{
+        //    var hotels = new List<Hotel>();
+        //    if (filter.Max != null && filter.Min != null)
+        //    {
+        //        hotels = await _context.Hotels.Where(h => h.CheapestPrice > (filter.Min == 1 ? 1 : filter.Min) && h.CheapestPrice < (filter.Max == 999 ? 999 : filter.Max)).ToListAsync();
+        //    }
+        //    else
+        //    {
+        //        hotels = await _context.Hotels.ToListAsync();
+        //    }
+
+
+        //    if (hotels == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    if (filter.Featured != null)
+        //    {
+        //        hotels = hotels.Where(h => h.Featured == filter.Featured).ToList();
+        //    }
+        //    if (filter.City != null)
+        //    {
+        //        hotels = hotels.Where(h => h.City == filter.City).ToList();
+        //    }
+        //    if (filter.Name != null)
+        //    {
+        //        hotels = hotels.Where(h => h.Name == filter.Name).ToList();
+        //    }
+        //    if (filter.Limit != null)
+        //    {
+        //        hotels = hotels.Take(filter.Limit.Value).ToList();
+        //    }
+
+
+        //    return Ok(hotels);
+        //}
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Hotel>>> GetHotels([FromQuery] HotelFilter filter)
         {
-            var hotels = new List<Hotel>();
+            IQueryable<Hotel> hotelsQuery = _context.Hotels;
+
+            // Фільтруємо готелі за максимальною та мінімальною ціною
             if (filter.Max != null && filter.Min != null)
             {
-                hotels = await _context.Hotels.Where(h => h.CheapestPrice > (filter.Min == 1 ? 1 : filter.Min) && h.CheapestPrice < (filter.Max == 999 ? 999 : filter.Max)).ToListAsync();
+                hotelsQuery = hotelsQuery.Where(h => h.CheapestPrice >= (filter.Min == 1 ? 1 : filter.Min) && h.CheapestPrice <= (filter.Max == 999 ? 999 : filter.Max));
             }
-            else
+
+            // Фільтруємо готелі за популярністю
+            if (filter.Featured != null)
             {
-                hotels = await _context.Hotels.ToListAsync();
+                hotelsQuery = hotelsQuery.Where(h => h.Featured == filter.Featured);
             }
 
+            // Фільтруємо готелі за містом
+            if (filter.City != null)
+            {
+                hotelsQuery = hotelsQuery.Where(h => h.City == filter.City);
+            }
 
-            if (hotels == null)
+            // Фільтруємо готелі за назвою
+            if (filter.Name != null)
+            {
+                hotelsQuery = hotelsQuery.Where(h => h.Name == filter.Name);
+            }
+
+            // Обмежуємо кількість готелів, які будуть повернуті
+            if (filter.Limit != null)
+            {
+                hotelsQuery = hotelsQuery.Take(filter.Limit.Value);
+            }
+
+            // Завантажуємо дані про зображення готелів разом із готелями
+            var hotels = await hotelsQuery.Include(h => h.HotelImages).ToListAsync();
+
+            // Перевіряємо чи були знайдені готелі
+            if (hotels == null || !hotels.Any())
             {
                 return NotFound();
             }
-            if (filter.Featured != null)
-            {
-                hotels = hotels.Where(h => h.Featured == filter.Featured).ToList();
-            }
-            if (filter.City != null)
-            {
-                hotels = hotels.Where(h => h.City == filter.City).ToList();
-            }
-            if (filter.Name != null)
-            {
-                hotels = hotels.Where(h => h.Name == filter.Name).ToList();
-            }
-            if (filter.Limit != null)
-            {
-                hotels = hotels.Take(filter.Limit.Value).ToList();
-            }
-
 
             return Ok(hotels);
         }
@@ -211,6 +405,32 @@ namespace BookingServer.Controllers
                 }
 
                 return Ok(rooms);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetHotelImagesByHotelId/{id}")]
+        public async Task<IActionResult> GetHotelImagesByHotelId(int id)
+        {
+            try
+            {
+                //var rooms = await _context.Rooms
+                //    .Where(r => r.Hotel.Id == id)
+                //    .ToListAsync();
+                var hotelImages = await _context.HotelImages
+                    .Where(hImg => hImg.Hotel.Id == id)
+                    .ToListAsync();
+
+
+                if (hotelImages == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(hotelImages);
             }
             catch (Exception ex)
             {

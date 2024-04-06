@@ -67,20 +67,20 @@ namespace BookingServer.Controllers
                 }
 
                 var tokenString = _authService.GenerateTokenString(userForm);
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Expires = DateTime.Now.AddMinutes(60) // Настройте срок действия куки
-                };
-                Response.Cookies.Append("access_token", tokenString, cookieOptions);
+                //var cookieOptions = new CookieOptions
+                //{
+                //    HttpOnly = true,
+                //    Expires = DateTime.Now.AddMinutes(60) // Настройте срок действия куки
+                //};
+                //Response.Cookies.Append("access_token", tokenString, cookieOptions);
 
                 var IsAdmin = await _userManager.IsInRoleAsync(user, "Admin");
 
                 return Ok(new
                 {
-                    //AccessToken = tokenString,
-                    Details = new { user.Id, user.UserName, user.Email},
-                    IsAdmin = new { IsAdmin }
+                    
+                    Details = new { user.Id, user.UserName, user.Email, Token = tokenString },
+                    IsAdmin
                 });
 
             }

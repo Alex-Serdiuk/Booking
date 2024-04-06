@@ -1,5 +1,6 @@
 ﻿using BookingServer.Models;
 using BookingServer.Models.Forms;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,29 +20,41 @@ namespace BookingServer.Controllers
             _logger = logger;
         }
 
-        //[HttpPut("{id}")]
-        //public async Task<IActionResult> UpdateUser(int id, [FromBody] RegisterForm user)
-        //{
-        //    try
-        //    {
-        //        if (id != user.Id)
-        //        {
-        //            return BadRequest(); // якщо ідентифікатори не співпадають, повертаємо 400
-        //        }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserForm user)
+        {
+            try
+            {
+                var existingUser = await _context.Users.FindAsync(id); // Знаходимо користувача за ідентифікатором
+                if (existingUser == null)
+                {
+                    return NotFound(); // Якщо користувач не знайдений, повертаємо 404
+                }
+                // Оновлюємо дані користувача з відповідними даними з запиту
+                existingUser.UserName = user.UserName;
+                existingUser.Email = user.Email;
+                existingUser.Img = user.Img;
+                existingUser.Country = user.Country;
+                existingUser.City = user.City;
+                existingUser.PhoneNumber = user.PhoneNumber;
 
-        //        _context.Entry(user).State = EntityState.Modified; // оновлюємо стан 
-        //        await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
+                //existingUser.Password = user.Password; // Наприклад, якщо ви оновлюєте пароль
+                                                       // Оновлюємо інші поля користувача за необхідності
 
-        //        return Ok(user);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Error updating user");
-        //        return StatusCode(500, "An error occurred while updating the user.");
-        //    }
-        //}
+                _context.Users.Update(existingUser); // Позначаємо користувача як оновленого в контексті
+                await _context.SaveChangesAsync(); // Зберігаємо зміни в базі даних
+
+                return Ok(existingUser);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user");
+                return StatusCode(500, "An error occurred while updating the user.");
+            }
+        }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<IEnumerable<User>>> GetUsers()
         {
             try
@@ -56,6 +69,7 @@ namespace BookingServer.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUser(int id)
         {
             try
@@ -72,6 +86,36 @@ namespace BookingServer.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, $"Error deleting hotel: {ex.Message}");
+            }
+        }
+
+        [HttpGet("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<User>> GetUserById(int id)
+        {
+            try
+            {
+                var userDB = await _context.Users.FindAsync(id);
+                if (userDB == null)
+                {
+                    return NotFound(); // якщо user не знайдений, повертаємо 404
+                }
+                var user = new UserForm
+                {
+                    UserName = userDB.UserName,
+                    Email = userDB.Email,
+                    Img = userDB.Img,
+                    Country = userDB.Country,
+                    City = userDB.City,
+                    PhoneNumber = userDB.PhoneNumber
+                };
+                
+                return Ok(user);
+               
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving user: {ex.Message}");
             }
         }
     }

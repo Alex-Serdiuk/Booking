@@ -1,5 +1,6 @@
 ﻿using BookingServer.Models;
 using BookingServer.Models.Forms;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ namespace BookingServer.Controllers
         }
 
         [HttpPost("createRoomNumber/{roomId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateRoomNumber(int roomId, [FromBody] RoomNumberForm roomNumber)
         {
             _logger.LogInformation("Add roomNumber item");
@@ -54,6 +56,7 @@ namespace BookingServer.Controllers
         }
 
         [HttpPut("updateRoomNumber/{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRoomNumber(int id, Room roomNumber)
         {
             try
@@ -108,6 +111,7 @@ namespace BookingServer.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteRoomNumber(int id)
         {
             try
@@ -131,6 +135,7 @@ namespace BookingServer.Controllers
         }
 
         [HttpPut("availability/{id}")]
+        //[Authorize]
         public async Task<IActionResult> UpdateRoomAvailability(int id, [FromBody] DateForm dateList)
         {
             try

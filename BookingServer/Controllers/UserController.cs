@@ -2,6 +2,7 @@
 using BookingServer.Models.Forms;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,14 +14,17 @@ namespace BookingServer.Controllers
     {
         private readonly BookingDbContext _context;
         private readonly ILogger<HotelController> _logger;
+        private readonly UserManager<User> _userManager;
 
-        public UserController(BookingDbContext context, ILogger<HotelController> logger)
+        public UserController(BookingDbContext context, ILogger<HotelController> logger, UserManager<User> userManager)
         {
             _context = context;
             _logger = logger;
+            _userManager = userManager;
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UserForm user)
         {
             try
@@ -38,11 +42,20 @@ namespace BookingServer.Controllers
                 existingUser.City = user.City;
                 existingUser.PhoneNumber = user.PhoneNumber;
 
+                
+
                 //existingUser.Password = user.Password; // Наприклад, якщо ви оновлюєте пароль
                                                        // Оновлюємо інші поля користувача за необхідності
 
                 _context.Users.Update(existingUser); // Позначаємо користувача як оновленого в контексті
                 await _context.SaveChangesAsync(); // Зберігаємо зміни в базі даних
+                if (user.Password.Any() && user.NewPassword.Any())
+                {
+                    //var token = await _userManager.GeneratePasswordResetTokenAsync(existingUser);
+                    //await _userManager.ResetPasswordAsync(existingUser, token, newPassword: "newPassword");
+                    await _userManager.ChangePasswordAsync(existingUser, user.Password, user.NewPassword);
+                }
+                
 
                 return Ok(existingUser);
             }
@@ -90,7 +103,7 @@ namespace BookingServer.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         public async Task<ActionResult<User>> GetUserById(int id)
         {
             try

@@ -77,7 +77,7 @@ namespace BookingServer.Controllers
             }
         }
 
-        [HttpGet("getRoomNumber/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetRoomNumber(int id)
         {
             try
@@ -163,6 +163,29 @@ namespace BookingServer.Controllers
             {
                 _logger.LogError(ex, "Error updating room availability");
                 return StatusCode(500, "An error occurred while updating room availability.");
+            }
+        }
+
+        [HttpGet("GetUnavailableDatesByRoomNumberId/{id}")]
+        public async Task<IActionResult> GetUnavailableDatesByRoomNumberId(int id)
+        {
+            try
+            {
+                var UnavailableDates = await _context.UnavailableDates
+                    .Where(uDate => uDate.RoomNumber.Id == id)
+                    .ToListAsync();
+
+
+                if (UnavailableDates == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(UnavailableDates);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
     }

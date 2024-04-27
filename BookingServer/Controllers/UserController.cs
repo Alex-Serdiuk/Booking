@@ -53,7 +53,11 @@ namespace BookingServer.Controllers
                 {
                     //var token = await _userManager.GeneratePasswordResetTokenAsync(existingUser);
                     //await _userManager.ResetPasswordAsync(existingUser, token, newPassword: "newPassword");
-                    await _userManager.ChangePasswordAsync(existingUser, user.Password, user.NewPassword);
+                    var result = await _userManager.ChangePasswordAsync(existingUser, user.Password, user.NewPassword);
+                    if (!result.Succeeded)
+                    {
+                        throw new Exception();
+                    }
                 }
                 
 

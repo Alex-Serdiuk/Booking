@@ -7,6 +7,7 @@ namespace BookingServer.Models
         public Room()
         {
             RoomNumbers = new HashSet<RoomNumber>();
+            RoomImages = new HashSet<RoomImage>();
         }
 
         public int Id { get; set; }
@@ -24,12 +25,12 @@ namespace BookingServer.Models
         public string Description { get; set; }
 
         public virtual ICollection<RoomNumber> RoomNumbers { get; set; }
-        //public List<RoomNumber> RoomNumbers { get; set; }
 
         //public DateTime CreatedAt { get; set; }
         //public DateTime UpdatedAt { get; set; }
-
+        public virtual ICollection<RoomImage> RoomImages { get; set; }
         public virtual Hotel Hotel { get; set; }
+
     }
 
 

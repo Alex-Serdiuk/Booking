@@ -22,27 +22,6 @@ namespace BookingServer.Controllers
             _logger = logger;
         }
 
-        //[HttpPost]
-        //public async Task<ActionResult<Hotel>> CreateHotel([FromBody] Hotel hotel)
-        //{
-        //    _logger.LogInformation("Add hotel item");
-        //    try
-        //    {
-        //        if (_context.Hotels == null)
-        //        {
-        //            return Problem("Entity set 'Context.Hotels'  is null.");
-        //        }
-        //        _context.Hotels.Add(hotel);
-        //        await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
-
-        //        return CreatedAtAction("GetHotel", new { id = hotel.Id }, hotel);// повертаємо 201 і готель
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, $"Error creating hotel: {ex.Message}");
-        //    }
-        //}
-
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<Hotel>> CreateHotel([FromBody] HotelForm hotelForm)
@@ -65,7 +44,7 @@ namespace BookingServer.Controllers
                     Distance = hotelForm.Distance,
                     Title = hotelForm.Title,
                     Description = hotelForm.Description,
-                    CheapestPrice = hotelForm.CheapestPrice,
+                    //CheapestPrice = hotelForm.CheapestPrice,
                     Featured = hotelForm.Featured
                 };
 
@@ -147,7 +126,7 @@ namespace BookingServer.Controllers
                 existingHotel.Distance = hotelForm.Distance;
                 existingHotel.Title = hotelForm.Title;
                 existingHotel.Description = hotelForm.Description;
-                existingHotel.CheapestPrice = hotelForm.CheapestPrice;
+                //existingHotel.CheapestPrice = hotelForm.CheapestPrice;
                 existingHotel.Featured = hotelForm.Featured;
 
                 // Перевіряємо, чи передано фотографії готелю
@@ -234,99 +213,56 @@ namespace BookingServer.Controllers
             //var hotel = await _context.Hotels.FindAsync(id);
             var hotel = await _context.Hotels
                 .Include(h => h.HotelImages) // включаємо список зображень для готелю
+                .Include(h => h.Rooms)       // Include rooms to compute CheapestPrice
                 .FirstOrDefaultAsync(h => h.Id == id);
 
             if (hotel == null)
             {
-                return NotFound(); // якщо готель не знайдено, повертаємо 404
+                return NotFound("Hotel not found."); // якщо готель не знайдено, повертаємо 404
             }
 
             return Ok(hotel); // якщо готель знайдено, повертаємо його
         }
 
-
-
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<Hotel>>> GetHotels([FromQuery] HotelFilter filter)
-        //{
-        //    var hotels = new List<Hotel>();
-        //    if (filter.Max != null && filter.Min != null)
-        //    {
-        //        hotels = await _context.Hotels.Where(h => h.CheapestPrice > (filter.Min == 1 ? 1 : filter.Min) && h.CheapestPrice < (filter.Max == 999 ? 999 : filter.Max)).ToListAsync();
-        //    }
-        //    else
-        //    {
-        //        hotels = await _context.Hotels.ToListAsync();
-        //    }
-
-
-        //    if (hotels == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    if (filter.Featured != null)
-        //    {
-        //        hotels = hotels.Where(h => h.Featured == filter.Featured).ToList();
-        //    }
-        //    if (filter.City != null)
-        //    {
-        //        hotels = hotels.Where(h => h.City == filter.City).ToList();
-        //    }
-        //    if (filter.Name != null)
-        //    {
-        //        hotels = hotels.Where(h => h.Name == filter.Name).ToList();
-        //    }
-        //    if (filter.Limit != null)
-        //    {
-        //        hotels = hotels.Take(filter.Limit.Value).ToList();
-        //    }
-
-
-        //    return Ok(hotels);
-        //}
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Hotel>>> GetHotels([FromQuery] HotelFilter filter)
         {
-            IQueryable<Hotel> hotelsQuery = _context.Hotels;
+            IQueryable<Hotel> hotelsQuery = _context.Hotels
+                .Include(h => h.HotelImages)
+                .Include(h => h.Rooms);    // Preload rooms to compute CheapestPrice;
 
-            // Фільтруємо готелі за максимальною та мінімальною ціною
+            // Retrieve hotels first to filter them in memory
+            var hotels = await hotelsQuery.ToListAsync();
+
+            // Now apply filters on the in-memory collection
             if (filter.Max != null && filter.Min != null)
             {
-                hotelsQuery = hotelsQuery.Where(h => h.CheapestPrice >= (filter.Min == 1 ? 1 : filter.Min) && h.CheapestPrice <= (filter.Max == 999 ? 999 : filter.Max));
+                hotels = hotels.Where(h => h.Rooms.Any() && h.Rooms.Min(r => r.Price) >= filter.Min && h.Rooms.Min(r => r.Price) <= filter.Max).ToList();
             }
 
-            // Фільтруємо готелі за популярністю
             if (filter.Featured != null)
             {
-                hotelsQuery = hotelsQuery.Where(h => h.Featured == filter.Featured);
+                hotels = hotels.Where(h => h.Featured == filter.Featured).ToList();
             }
 
-            // Фільтруємо готелі за містом
             if (filter.City != null)
             {
-                hotelsQuery = hotelsQuery.Where(h => h.City == filter.City);
+                hotels = hotels.Where(h => h.City == filter.City).ToList();
             }
 
-            // Фільтруємо готелі за назвою
             if (filter.Name != null)
             {
-                hotelsQuery = hotelsQuery.Where(h => h.Name == filter.Name);
+                hotels = hotels.Where(h => h.Name == filter.Name).ToList();
             }
 
-            // Обмежуємо кількість готелів, які будуть повернуті
             if (filter.Limit != null)
             {
-                hotelsQuery = hotelsQuery.Take(filter.Limit.Value);
+                hotels = hotels.Take(filter.Limit.Value).ToList();
             }
 
-            // Завантажуємо дані про зображення готелів разом із готелями
-            var hotels = await hotelsQuery.Include(h => h.HotelImages).ToListAsync();
-
-            // Перевіряємо чи були знайдені готелі
-            if (hotels == null || !hotels.Any())
+            if (!hotels.Any())
             {
-                return NotFound();
+                return NotFound("No hotels found.");
             }
 
             return Ok(hotels);
@@ -389,9 +325,6 @@ namespace BookingServer.Controllers
         {
             try
             {
-                //var rooms = await _context.Rooms
-                //    .Where(r => r.Hotel.Id == id)
-                //    .ToListAsync();
                 var rooms = await _context.Rooms
                     .Include(r => r.RoomNumbers)
                         .ThenInclude(rn => rn.UnavailableDates)
@@ -417,9 +350,6 @@ namespace BookingServer.Controllers
         {
             try
             {
-                //var rooms = await _context.Rooms
-                //    .Where(r => r.Hotel.Id == id)
-                //    .ToListAsync();
                 var hotelImages = await _context.HotelImages
                     .Where(hImg => hImg.Hotel.Id == id)
                     .ToListAsync();

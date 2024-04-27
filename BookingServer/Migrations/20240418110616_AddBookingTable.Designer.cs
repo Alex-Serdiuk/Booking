@@ -4,6 +4,7 @@ using BookingServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookingServer.Migrations
 {
     [DbContext(typeof(BookingDbContext))]
-    partial class BookingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240418110616_AddBookingTable")]
+    partial class AddBookingTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,7 +39,7 @@ namespace BookingServer.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Bookings");
+                    b.ToTable("Booking");
                 });
 
             modelBuilder.Entity("BookingServer.Models.Hotel", b =>
@@ -51,6 +53,9 @@ namespace BookingServer.Migrations
                     b.Property<string>("Address")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("CheapestPrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -139,28 +144,6 @@ namespace BookingServer.Migrations
                     b.HasIndex("HotelId");
 
                     b.ToTable("Rooms");
-                });
-
-            modelBuilder.Entity("BookingServer.Models.RoomImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
-
-                    b.Property<int>("RoomId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoomId");
-
-                    b.ToTable("RoomImage");
                 });
 
             modelBuilder.Entity("BookingServer.Models.RoomNumber", b =>
@@ -461,17 +444,6 @@ namespace BookingServer.Migrations
                     b.Navigation("Hotel");
                 });
 
-            modelBuilder.Entity("BookingServer.Models.RoomImage", b =>
-                {
-                    b.HasOne("BookingServer.Models.Room", "Room")
-                        .WithMany("RoomImages")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Room");
-                });
-
             modelBuilder.Entity("BookingServer.Models.RoomNumber", b =>
                 {
                     b.HasOne("BookingServer.Models.Room", "Room")
@@ -567,8 +539,6 @@ namespace BookingServer.Migrations
 
             modelBuilder.Entity("BookingServer.Models.Room", b =>
                 {
-                    b.Navigation("RoomImages");
-
                     b.Navigation("RoomNumbers");
                 });
 

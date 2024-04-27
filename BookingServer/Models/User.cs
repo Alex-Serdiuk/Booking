@@ -5,6 +5,10 @@ namespace BookingServer.Models
 {
     public class User: IdentityUser<int>
     {
+        public User()
+        {
+            Bookings = new HashSet<Booking>();
+        }
 
         //public int Id { get; set; }
 
@@ -27,6 +31,8 @@ namespace BookingServer.Models
         [Required]
         [MaxLength(255)]
         public string City { get; set; }
+
+        public virtual ICollection<Booking> Bookings { get; set; }
 
         //[Required]
         //[Phone]

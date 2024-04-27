@@ -18,12 +18,13 @@ namespace BookingServer.Models
         public virtual DbSet<Room> Rooms { get; set; }
         public virtual DbSet<RoomNumber> RoomNumbers { get; set; }
         public virtual DbSet<UnavailableDate> UnavailableDates { get; set; }
+        public virtual DbSet<Booking> Bookings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<Hotel>()
-                .Property(h => h.CheapestPrice)
-                .HasColumnType("decimal(18,2)");
+            //builder.Entity<Hotel>()
+            //    .Property(h => h.CheapestPrice)
+            //    .HasColumnType("decimal(18,2)");
 
             builder.Entity<Room>()
                 .Property(r => r.Price)

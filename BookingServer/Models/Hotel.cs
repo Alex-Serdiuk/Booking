@@ -28,7 +28,6 @@ namespace BookingServer.Models
         public string Distance { get; set; }
 
         public virtual ICollection<HotelImage> HotelImages { get; set; }
-        //public List<string> Photos { get; set; }
 
         [Required]
         public string Title { get; set; }
@@ -40,10 +39,16 @@ namespace BookingServer.Models
         public int Rating { get; set; }
 
         public virtual ICollection<Room> Rooms { get; set;}
-        //public List<string> Rooms { get; set; }
 
-        [Required]
-        public decimal CheapestPrice { get; set; }
+        //[Required]
+        //public decimal CheapestPrice { get; set; }
+        public decimal? CheapestPrice
+        {
+            get
+            {
+                return Rooms?.Any() == true ? Rooms.Min(room => room.Price) : null;
+            }
+        }
 
         public bool Featured { get; set; }
     }

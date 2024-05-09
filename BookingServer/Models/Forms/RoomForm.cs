@@ -5,6 +5,7 @@
         public RoomForm()
         {
             RoomNumbers = new List<RoomNumberForm>();
+            Photos = new List<string>();
         }
 
         public string Title { get; set; }
@@ -17,5 +18,6 @@
 
         
         public List<RoomNumberForm>? RoomNumbers { get; set; }
+        public List<string>? Photos { get; set; }
     }
 }

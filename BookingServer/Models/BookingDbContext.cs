@@ -15,6 +15,7 @@ namespace BookingServer.Models
         public virtual DbSet<User> Users { get; set; } = null!;
         public virtual DbSet<Hotel> Hotels { get; set; }
         public virtual DbSet<HotelImage> HotelImages { get; set; }
+        public virtual DbSet<RoomImage> RoomImages { get; set; }
         public virtual DbSet<Room> Rooms { get; set; }
         public virtual DbSet<RoomNumber> RoomNumbers { get; set; }
         public virtual DbSet<UnavailableDate> UnavailableDates { get; set; }

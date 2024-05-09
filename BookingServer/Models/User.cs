@@ -21,16 +21,16 @@ namespace BookingServer.Models
         //[MaxLength(255)]
         //public string Email { get; set; }
 
-        [Required]
+        
         [MaxLength(255)]
-        public string Country { get; set; }
+        public string? Country { get; set; }
 
         [MaxLength(255)]
         public string? Img { get; set; }
 
-        [Required]
+        
         [MaxLength(255)]
-        public string City { get; set; }
+        public string? City { get; set; }
 
         public virtual ICollection<Booking> Bookings { get; set; }
 

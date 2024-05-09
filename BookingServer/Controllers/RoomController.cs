@@ -65,6 +65,34 @@ namespace BookingServer.Controllers
 
                     await _context.SaveChangesAsync();
                 }
+
+                // Перевіряємо, чи передано фотографії номеру
+                if (room.Photos != null)
+                {
+                    foreach (var photoUrl in room.Photos)
+                    {
+                        // Перевіряємо URL фотографії
+                        if (Uri.TryCreate(photoUrl, UriKind.Absolute, out Uri validatedUri))
+                        {
+                            var roomImage = new RoomImage
+                            {
+                                Url = photoUrl,
+                                Room = newRoom
+                            };
+                            newRoom.RoomImages.Add(roomImage);
+                        }
+                        else
+                        {
+                            // Якщо URL недійсний, ігноруємо його або видаємо помилку, якщо потрібно
+                            // Можна вибрати одну з наступних стратегій:
+                            // - Пропустити недійсні URL і продовжити створення номеру
+                            // - Повернути помилку клієнту, якщо вважаєте, що це критична помилка
+                            // В даному прикладі просто ігноруємо недійсні URL
+                            _logger.LogWarning($"Invalid URL: {photoUrl}");
+                        }
+                    }
+                }
+                await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
                 return CreatedAtAction("GetRoom", new { id = savedRoom.Entity.Id }, savedRoom.Entity); // повертаємо 201 і справу
                 //return Ok(savedRoom.Entity);
             }
@@ -146,7 +174,35 @@ namespace BookingServer.Controllers
 
                     await _context.SaveChangesAsync();
                 }
-                
+
+                // Перевіряємо, чи передано фотографії номеру
+                if (room.Photos != null)
+                {
+                    foreach (var photoUrl in room.Photos)
+                    {
+                        // Перевіряємо URL фотографії
+                        if (Uri.TryCreate(photoUrl, UriKind.Absolute, out Uri validatedUri))
+                        {
+                            var roomImage = new RoomImage
+                            {
+                                Url = photoUrl,
+                                Room = existingRoom
+                            };
+                            existingRoom.RoomImages.Add(roomImage);
+                        }
+                        else
+                        {
+                            // Якщо URL недійсний, ігноруємо його або видаємо помилку, якщо потрібно
+                            // Можна вибрати одну з наступних стратегій:
+                            // - Пропустити недійсні URL і продовжити створення номеру
+                            // - Повернути помилку клієнту, якщо вважаєте, що це критична помилка
+                            // В даному прикладі просто ігноруємо недійсні URL
+                            _logger.LogWarning($"Invalid URL: {photoUrl}");
+                        }
+                    }
+                }
+                await _context.SaveChangesAsync(); // зберігаємо зміни в базі даних
+
 
                 return Ok(existingRoom);
             }
@@ -161,7 +217,10 @@ namespace BookingServer.Controllers
         {
             try
             {
-                var room = await _context.Rooms.FindAsync(id);
+                var room = await _context.Rooms
+                    .Include(r => r.RoomImages) // включаємо список зображень для room
+                .Include(r => r.RoomNumbers)       // Include roomNumbers
+                .FirstOrDefaultAsync(r => r.Id == id);
                 if (room == null)
                 {
                     return NotFound();
@@ -230,6 +289,29 @@ namespace BookingServer.Controllers
                 }
 
                 return Ok(roomNumbers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetRoomImagesByRoomId/{id}")]
+        public async Task<IActionResult> GetRoomImagesByRoomId(int id)
+        {
+            try
+            {
+                var roomImages = await _context.RoomImages
+                    .Where(rImg => rImg.Room.Id == id)
+                    .ToListAsync();
+
+
+                if (roomImages == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(roomImages);
             }
             catch (Exception ex)
             {

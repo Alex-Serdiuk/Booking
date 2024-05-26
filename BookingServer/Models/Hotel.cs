@@ -35,8 +35,9 @@ namespace BookingServer.Models
         [Required]
         public string Description { get; set; }
 
-        [Range(0, 5)]
-        public int Rating { get; set; }
+        //[Range(0, 5)]
+        [Range(0.0, 10.0)]
+        public double Rating { get; set; }
 
         public virtual ICollection<Room> Rooms { get; set;}
 

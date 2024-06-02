@@ -17,7 +17,7 @@ namespace BookingServer.Models.Forms
         public string Distance { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public decimal CheapestPrice { get; set; }
+        //public decimal CheapestPrice { get; set; }
         public bool Featured { get; set; }
 
         public List<string>? Photos { get; set; }

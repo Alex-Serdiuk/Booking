@@ -209,11 +209,11 @@ namespace BookingServer.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Hotel>> GetHotel(int id)
         {
-            // знаходимо готель за ідентифікатором
-            //var hotel = await _context.Hotels.FindAsync(id);
+            // Знаходимо готель за ідентифікатором
             var hotel = await _context.Hotels
                 .Include(h => h.HotelImages) // включаємо список зображень для готелю
                 .Include(h => h.Rooms)       // Include rooms to compute CheapestPrice
+                    .ThenInclude(r => r.RoomImages) // Include room images
                 .FirstOrDefaultAsync(h => h.Id == id);
 
             if (hotel == null)
@@ -221,7 +221,54 @@ namespace BookingServer.Controllers
                 return NotFound("Hotel not found."); // якщо готель не знайдено, повертаємо 404
             }
 
-            return Ok(hotel); // якщо готель знайдено, повертаємо його
+            // Створюємо новий список для об'єднаних зображень
+            var combinedImages = new List<HotelImage>(hotel.HotelImages);
+
+            // Додаємо зображення з кожної кімнати до списку зображень готелю
+            foreach (var room in hotel.Rooms)
+            {
+                foreach (var roomImage in room.RoomImages)
+                {
+                    combinedImages.Add(new HotelImage
+                    {
+                        Id = roomImage.Id,
+                        Url = roomImage.Url,
+                        Hotel = hotel
+                    });
+                }
+            }
+
+            // Можна створити DTO об'єкт, якщо потрібно обмежити чи змінити дані, які повертаються клієнту
+            var hotelDto = new
+            {
+                hotel.Id,
+                hotel.Name,
+                hotel.Type,
+                hotel.City,
+                hotel.Address,
+                hotel.Distance,
+                hotel.Title,
+                hotel.Description,
+                hotel.Rating,
+                hotel.CheapestPrice,
+                hotel.Featured,
+                HotelImages = combinedImages,
+                Rooms = hotel.Rooms.Select(r => new
+                {
+                    r.Id,
+                    r.Title,
+                    r.Price,
+                    r.MaxPeople,
+                    r.Description,
+                    RoomImages = r.RoomImages.Select(ri => new
+                    {
+                        ri.Id,
+                        ri.Url
+                    })
+                })
+            };
+
+            return Ok(hotelDto); // Повертаємо готель з об'єднаним списком зображень
         }
 
         [HttpGet]

@@ -276,15 +276,20 @@ namespace BookingServer.Controllers
         {
             IQueryable<Hotel> hotelsQuery = _context.Hotels
                 .Include(h => h.HotelImages)
-                .Include(h => h.Rooms);    // Preload rooms to compute CheapestPrice;
+                .Include(h => h.Rooms);    // Preload rooms to compute CheapestPrice
 
             // Retrieve hotels first to filter them in memory
             var hotels = await hotelsQuery.ToListAsync();
 
             // Now apply filters on the in-memory collection
-            if (filter.Max != null && filter.Min != null)
+            if (filter.Min != null)
             {
-                hotels = hotels.Where(h => h.Rooms.Any() && h.Rooms.Min(r => r.Price) >= filter.Min && h.Rooms.Min(r => r.Price) <= filter.Max).ToList();
+                hotels = hotels.Where(h => h.Rooms.Any() && h.Rooms.Min(r => r.Price) >= filter.Min).ToList();
+            }
+
+            if (filter.Max != null)
+            {
+                hotels = hotels.Where(h => h.Rooms.Any() && h.Rooms.Min(r => r.Price) <= filter.Max).ToList();
             }
 
             if (filter.Featured != null)

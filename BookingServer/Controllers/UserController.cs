@@ -49,17 +49,17 @@ namespace BookingServer.Controllers
 
                 _context.Users.Update(existingUser); // Позначаємо користувача як оновленого в контексті
                 await _context.SaveChangesAsync(); // Зберігаємо зміни в базі даних
-                if (user.Password.Any() && user.NewPassword.Any())
+                                                  
+                // Check if Password and NewPassword are provided
+                if (!string.IsNullOrEmpty(user.Password) && !string.IsNullOrEmpty(user.NewPassword))
                 {
-                    //var token = await _userManager.GeneratePasswordResetTokenAsync(existingUser);
-                    //await _userManager.ResetPasswordAsync(existingUser, token, newPassword: "newPassword");
                     var result = await _userManager.ChangePasswordAsync(existingUser, user.Password, user.NewPassword);
                     if (!result.Succeeded)
                     {
-                        throw new Exception();
+                        throw new Exception("Password change failed");
                     }
                 }
-                
+
 
                 return Ok(existingUser);
             }

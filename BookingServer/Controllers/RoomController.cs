@@ -139,7 +139,7 @@ namespace BookingServer.Controllers
         //    }
         //}
 
-        [HttpPut("updateRoom/{id}")]
+        [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRoom(int id, [FromBody] RoomForm room)
         {
